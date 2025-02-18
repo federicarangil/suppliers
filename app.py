@@ -3,6 +3,7 @@ from models import db, Proveedor
 import requests
 from datetime import datetime
 import os
+import csv  # Asegúrate de importar el módulo csv
 
 app = Flask(__name__)
 
@@ -19,6 +20,14 @@ def get_dolar_oficial():
     except Exception as e:
         print(f"Error al obtener cotización del dólar: {e}")
         return None
+
+def actualizar_csv():
+    proveedores = Proveedor.query.all()  # Obtiene todos los proveedores existentes
+    with open('proveedores_actualizados.csv', mode='w', newline='') as file:  # Cambia a modo 'w' para sobrescribir
+        writer = csv.writer(file)
+        writer.writerow(['ID', 'Nombre', 'Código', 'Mail', 'Deuda Pesos', 'Deuda Dólares', 'Fecha Actualización'])  # Escribe encabezados
+        for proveedor in proveedores:
+            writer.writerow([proveedor.id, proveedor.nombre, proveedor.codigo, proveedor.mail, proveedor.deuda_pesos, proveedor.deuda_dolares, proveedor.fecha_actualizacion])
 
 @app.route('/proveedores', methods=['GET'])
 def get_proveedores():
@@ -68,6 +77,7 @@ def create_proveedor():
     try:
         db.session.add(nuevo_proveedor)
         db.session.commit()
+        actualizar_csv()  # Llama a la función para actualizar el CSV
         return jsonify(nuevo_proveedor.to_dict()), 201
     except Exception as e:
         db.session.rollback()
@@ -91,6 +101,7 @@ def update_proveedor(id):
     
     try:
         db.session.commit()
+        actualizar_csv()  # Llama a la función para actualizar el CSV
         return jsonify(proveedor.to_dict())
     except Exception as e:
         db.session.rollback()
@@ -102,6 +113,7 @@ def delete_proveedor(id):
     try:
         db.session.delete(proveedor)
         db.session.commit()
+        actualizar_csv()  # Llama a la función para actualizar el CSV
         return '', 204
     except Exception as e:
         db.session.rollback()
